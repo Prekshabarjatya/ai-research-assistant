@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>AI Research Assistant</title>
-<meta name="description" content="A FastAPI + LangChain retrieval-augmented generation service: ask questions and get grounded, cited answers from an indexed document corpus.">
+<meta name="description" content="Retrieval-augmented document Q&amp;A service: FastAPI + LangChain ingestion, chunking, and TF-IDF vector retrieval, with LLM grounded synthesis and cited sources.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -31,7 +31,7 @@
   <section class="masthead">
     <span class="kicker">Live service &middot; retrieval-augmented generation</span>
     <h1 class="title">AI Research Assistant</h1>
-    <p class="dek">A FastAPI service that answers questions from an indexed document set: passages are chunked, vectorized, and retrieved by relevance, then handed to a language model so every answer is grounded in a cited source &mdash; or, with no model configured, you get the cited passages directly.</p>
+    <p class="dek">A FastAPI service that answers questions from an indexed document set. Passages are chunked, vectorized with TF-IDF, and retrieved by cosine similarity, then handed to a language model so every answer is grounded in a cited source. With no model configured, you get the cited passages directly.</p>
     <div class="byline-row">
       <span>Preksha Barjatya</span>
       <span class="sep">/</span>
@@ -200,7 +200,7 @@
         <span class="fig">01</span>
         <div>
           <h3>TF-IDF over a neural embedding model</h3>
-          <p>No GPU, no model download, no embedding API key &mdash; ingestion works the moment the service starts. The vector-store interface doesn't care how a vector was produced, so a dense embedding model is a one-file swap, not a redesign.</p>
+          <p>No GPU, no model download, no embedding API key. Ingestion works the moment the service starts. The vector-store interface doesn't care how a vector was produced, so a dense embedding model is a one-file swap, not a redesign.</p>
         </div>
       </div>
       <div class="rationale-item">
@@ -221,7 +221,7 @@
         <span class="fig">04</span>
         <div>
           <h3>The evidence is never hidden behind the answer</h3>
-          <p>Every response includes the retrieved passages, their document, and their relevance score &mdash; whether or not a language model was available to summarize them.</p>
+          <p>Every response includes the retrieved passages, their document, and their relevance score, whether or not a language model was available to summarize them.</p>
         </div>
       </div>
     </div>

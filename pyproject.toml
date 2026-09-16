@@ -1,7 +1,7 @@
 [project]
 name = "ai-research-assistant"
 version = "0.1.0"
-description = "Retrieval-augmented document Q&A service — FastAPI + LangChain ingestion/chunking/retrieval pipeline with Groq-backed grounded synthesis"
+description = "Retrieval-augmented document Q&A service — FastAPI + LangChain ingestion, chunking, and TF-IDF vector retrieval, with LLM grounded synthesis and cited sources. Ships as one Docker image with its own frontend."
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115",

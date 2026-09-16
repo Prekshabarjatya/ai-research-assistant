@@ -1,13 +1,23 @@
 # AI Research Assistant
 
-A retrieval-augmented generation (RAG) service: it ingests a document
-corpus, indexes it as vectors, and answers questions by retrieving the
-most relevant passages and handing them to a language model for a grounded,
-cited answer. Built with FastAPI and LangChain.
+Retrieval-augmented document Q&A service — FastAPI + LangChain ingestion,
+chunking, and TF-IDF vector retrieval, with LLM grounded synthesis and
+cited sources. Ships as one Docker image with its own frontend.
 
-A live instance ships with its own frontend at `/` — ask a question,
-upload or paste a document, and watch the architecture diagram trace
-which pipeline step is running.
+A source document is normalized, split into overlapping passages, and
+vectorized into a TF-IDF index (`app/vectorstore.py`). At query time, the
+question is vectorized with the same fitted vectorizer, the highest-scoring
+passages are retrieved by cosine similarity, and a language model is
+prompted with only those passages, required to answer solely from them and
+to cite which one it used (`app/synthesis.py`). The language model backend
+is pluggable — the default wiring calls a Groq-hosted model through
+LangChain, and swapping providers touches only that one module. Without a
+model configured, the retrieved passages are returned directly instead of
+a synthesized answer, so the retrieval half stands on its own.
+
+The frontend at `/` is served by the same process — ask a question, upload
+or paste a document, and watch the architecture diagram trace which
+pipeline step is running.
 
 ## How it works
 
