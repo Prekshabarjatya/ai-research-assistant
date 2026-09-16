@@ -16,8 +16,8 @@
   <div class="navrow">
     <a href="#top" class="navmark"><span class="dot" id="status-dot"></span>AI RESEARCH ASSISTANT</a>
     <nav class="navlinks">
-      <a href="#ask">Ask</a>
       <a href="#documents">Documents</a>
+      <a href="#ask">Ask</a>
       <a href="#architecture">Architecture</a>
       <a href="#notes">Design notes</a>
       <a href="#stack">Stack</a>
@@ -46,8 +46,44 @@
     </div>
   </section>
 
+  <section id="documents">
+    <div class="section-head"><span class="section-num">&sect;1</span><h2 class="section-title">Documents</h2></div>
+    <p class="prose lede">Everything below is answered only from what's indexed here. Upload a file or paste text first, then ask about it.</p>
+
+    <div class="ingest-grid">
+      <form id="ingest-file-form" class="ingest-panel">
+        <div class="field">
+          <label for="ingest-file">Upload a file</label>
+          <input id="ingest-file" name="file" type="file" accept=".md,.markdown,.txt,.pdf" required>
+          <p class="field-hint">Markdown, plain text, or PDF &middot; up to 10&nbsp;MB.</p>
+        </div>
+        <button type="submit" class="btn-secondary">Upload and index</button>
+        <p class="field-note" id="ingest-file-note" aria-live="polite"></p>
+      </form>
+
+      <form id="ingest-text-form" class="ingest-panel">
+        <div class="field">
+          <label for="ingest-title">Title</label>
+          <input id="ingest-title" name="title" type="text" maxlength="200" placeholder="e.g. release-notes.md" required>
+        </div>
+        <div class="field">
+          <label for="ingest-text">Text</label>
+          <textarea id="ingest-text" name="text" rows="5" placeholder="Paste the document body here." required></textarea>
+        </div>
+        <button type="submit" class="btn-secondary">Add document</button>
+        <p class="field-note" id="ingest-text-note" aria-live="polite"></p>
+      </form>
+    </div>
+
+    <div class="doc-list-head">
+      <span class="spec-cluster-title" style="margin:0;">Currently indexed</span>
+      <span class="mono doc-total" id="doc-total"></span>
+    </div>
+    <ul class="doc-list" id="doc-list"></ul>
+  </section>
+
   <section id="ask">
-    <div class="section-head"><span class="section-num">&sect;1</span><h2 class="section-title">Ask</h2></div>
+    <div class="section-head"><span class="section-num">&sect;2</span><h2 class="section-title">Ask</h2></div>
 
     <form id="ask-form" class="ask-form">
       <div class="field">
@@ -62,42 +98,6 @@
     </form>
 
     <div id="answer-area" class="answer-area" aria-live="polite"></div>
-  </section>
-
-  <section id="documents">
-    <div class="section-head"><span class="section-num">&sect;2</span><h2 class="section-title">Documents</h2></div>
-    <p class="prose lede">Every question is answered only from what's indexed here. Add more with a title and some text, or upload a file.</p>
-
-    <div class="ingest-grid">
-      <form id="ingest-text-form" class="ingest-panel">
-        <div class="field">
-          <label for="ingest-title">Title</label>
-          <input id="ingest-title" name="title" type="text" maxlength="200" placeholder="e.g. release-notes.md" required>
-        </div>
-        <div class="field">
-          <label for="ingest-text">Text</label>
-          <textarea id="ingest-text" name="text" rows="5" placeholder="Paste the document body here." required></textarea>
-        </div>
-        <button type="submit" class="btn-secondary">Add document</button>
-        <p class="field-note" id="ingest-text-note" aria-live="polite"></p>
-      </form>
-
-      <form id="ingest-file-form" class="ingest-panel">
-        <div class="field">
-          <label for="ingest-file">Upload a file</label>
-          <input id="ingest-file" name="file" type="file" accept=".md,.markdown,.txt,.pdf" required>
-          <p class="field-hint">Markdown, plain text, or PDF &middot; up to 10&nbsp;MB.</p>
-        </div>
-        <button type="submit" class="btn-secondary">Upload and index</button>
-        <p class="field-note" id="ingest-file-note" aria-live="polite"></p>
-      </form>
-    </div>
-
-    <div class="doc-list-head">
-      <span class="spec-cluster-title" style="margin:0;">Currently indexed</span>
-      <span class="mono doc-total" id="doc-total"></span>
-    </div>
-    <ul class="doc-list" id="doc-list"></ul>
   </section>
 
   <section id="architecture">
