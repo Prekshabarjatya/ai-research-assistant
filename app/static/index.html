@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AI Research Assistant</title>
+<meta name="description" content="A FastAPI + LangChain retrieval-augmented generation service: ask questions and get grounded, cited answers from an indexed document corpus.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="masthead-nav">
+  <div class="navrow">
+    <a href="#top" class="navmark"><span class="dot" id="status-dot"></span>AI RESEARCH ASSISTANT</a>
+    <nav class="navlinks">
+      <a href="#ask">Ask</a>
+      <a href="#documents">Documents</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#notes">Design notes</a>
+      <a href="#stack">Stack</a>
+    </nav>
+    <div class="status-pill mono" id="status-pill">checking service&hellip;</div>
+  </div>
+</header>
+
+<div class="wrap" id="top">
+
+  <section class="masthead">
+    <span class="kicker">Live service &middot; retrieval-augmented generation</span>
+    <h1 class="title">AI Research Assistant</h1>
+    <p class="dek">A FastAPI service that answers questions from an indexed document set: passages are chunked, vectorized, and retrieved by relevance, then handed to a language model so every answer is grounded in a cited source &mdash; or, with no model configured, you get the cited passages directly.</p>
+    <div class="byline-row">
+      <span>Preksha Barjatya</span>
+      <span class="sep">/</span>
+      <span>Systems design &amp; implementation</span>
+    </div>
+    <div class="tagrow">
+      <span class="tag">FastAPI</span>
+      <span class="tag">LangChain</span>
+      <span class="tag">RAG</span>
+      <span class="tag">Vector search</span>
+      <span class="tag">Groq</span>
+    </div>
+  </section>
+
+  <section id="ask">
+    <div class="section-head"><span class="section-num">&sect;1</span><h2 class="section-title">Ask</h2></div>
+
+    <form id="ask-form" class="ask-form">
+      <div class="field">
+        <label for="question">Question</label>
+        <textarea id="question" name="question" rows="2" maxlength="2000" placeholder="e.g. What separators does the chunker try first?" required></textarea>
+        <p class="field-error" id="question-error" hidden></p>
+      </div>
+      <div class="ask-actions">
+        <button type="submit" class="btn-primary" id="ask-submit">Ask</button>
+        <div class="example-chips" id="example-chips"></div>
+      </div>
+    </form>
+
+    <div id="answer-area" class="answer-area" aria-live="polite"></div>
+  </section>
+
+  <section id="documents">
+    <div class="section-head"><span class="section-num">&sect;2</span><h2 class="section-title">Documents</h2></div>
+    <p class="prose lede">Every question is answered only from what's indexed here. Add more with a title and some text, or upload a file.</p>
+
+    <div class="ingest-grid">
+      <form id="ingest-text-form" class="ingest-panel">
+        <div class="field">
+          <label for="ingest-title">Title</label>
+          <input id="ingest-title" name="title" type="text" maxlength="200" placeholder="e.g. release-notes.md" required>
+        </div>
+        <div class="field">
+          <label for="ingest-text">Text</label>
+          <textarea id="ingest-text" name="text" rows="5" placeholder="Paste the document body here." required></textarea>
+        </div>
+        <button type="submit" class="btn-secondary">Add document</button>
+        <p class="field-note" id="ingest-text-note" aria-live="polite"></p>
+      </form>
+
+      <form id="ingest-file-form" class="ingest-panel">
+        <div class="field">
+          <label for="ingest-file">Upload a file</label>
+          <input id="ingest-file" name="file" type="file" accept=".md,.markdown,.txt,.pdf" required>
+          <p class="field-hint">Markdown, plain text, or PDF &middot; up to 10&nbsp;MB.</p>
+        </div>
+        <button type="submit" class="btn-secondary">Upload and index</button>
+        <p class="field-note" id="ingest-file-note" aria-live="polite"></p>
+      </form>
+    </div>
+
+    <div class="doc-list-head">
+      <span class="spec-cluster-title" style="margin:0;">Currently indexed</span>
+      <span class="mono doc-total" id="doc-total"></span>
+    </div>
+    <ul class="doc-list" id="doc-list"></ul>
+  </section>
+
+  <section id="architecture">
+    <div class="section-head"><span class="section-num">&sect;3</span><h2 class="section-title">Architecture</h2></div>
+    <div class="diagram-scroll">
+      <svg viewBox="0 0 1260 400" role="img" aria-label="Diagram of the retrieval-augmented generation pipeline, from source documents and a user query through chunking, TF-IDF vectorizing, retrieval, and synthesis to a grounded response.">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--line-strong)"></path>
+          </marker>
+          <marker id="arrow-accent" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--accent)"></path>
+          </marker>
+        </defs>
+
+        <text x="20" y="26" class="lane-label">Ingestion (offline, once per document)</text>
+        <text x="20" y="300" class="lane-label">Query (online, per request)</text>
+
+        <g class="node" data-node="ingest">
+          <rect class="node-box is-tributary" x="20" y="40" width="170" height="62" rx="3"></rect>
+          <text class="node-label" x="35" y="66">Source documents</text>
+          <text class="node-caption" x="35" y="86">Markdown &middot; text &middot; PDF</text>
+        </g>
+        <path class="flow-line draw-in" d="M190,71 H228" marker-end="url(#arrow)"></path>
+
+        <g class="node" data-node="chunk">
+          <rect class="node-box is-tributary" x="230" y="40" width="150" height="62" rx="3"></rect>
+          <text class="node-label" x="245" y="66">Chunking</text>
+          <text class="node-caption" x="245" y="86">900 chars, 150 overlap</text>
+        </g>
+        <path class="flow-line draw-in" d="M380,71 C420,71 420,196 440,199" marker-end="url(#arrow)"></path>
+
+        <g class="node" data-node="query-node">
+          <rect class="node-box is-tributary" x="20" y="270" width="170" height="62" rx="3"></rect>
+          <text class="node-label" x="35" y="296">User query</text>
+          <text class="node-caption" x="35" y="316">natural-language question</text>
+        </g>
+        <path class="flow-line draw-in" d="M190,301 C420,301 420,206 440,203" marker-end="url(#arrow)"></path>
+
+        <g class="node" data-node="embed">
+          <rect class="node-box" x="440" y="168" width="150" height="64" rx="3"></rect>
+          <text class="node-label" x="455" y="196">TF-IDF vectorizer</text>
+          <text class="node-caption" x="455" y="216">shared doc &amp; query space</text>
+        </g>
+        <path class="flow-line spine draw-in" d="M590,200 H648" marker-end="url(#arrow)"></path>
+
+        <g class="node" data-node="store">
+          <rect class="node-box" x="650" y="168" width="150" height="64" rx="3"></rect>
+          <text class="node-label" x="665" y="196">Vector index</text>
+          <text class="node-caption" x="665" y="216">cosine similarity</text>
+        </g>
+        <path class="flow-line spine draw-in is-active" d="M800,200 H858" marker-end="url(#arrow-accent)"></path>
+
+        <g class="node" data-node="retrieve">
+          <rect class="node-box" x="860" y="168" width="150" height="64" rx="3"></rect>
+          <text class="node-label" x="875" y="196">Retriever</text>
+          <text class="node-caption" x="875" y="216">top-k, score-filtered</text>
+        </g>
+        <path class="flow-line spine draw-in is-active" d="M1010,200 H1068" marker-end="url(#arrow-accent)"></path>
+
+        <g class="node" data-node="synthesize">
+          <rect class="node-box" x="1070" y="168" width="170" height="64" rx="3"></rect>
+          <text class="node-label" x="1085" y="196">Synthesis</text>
+          <text class="node-caption" x="1085" y="216">context-constrained prompt</text>
+        </g>
+        <path class="flow-line spine draw-in is-active" d="M1240,200 H1258" marker-end="url(#arrow-accent)"></path>
+        <text class="out-label" x="1085" y="252">&rarr; grounded, cited response</text>
+      </svg>
+    </div>
+    <p class="diagram-note">Documents and queries pass through the same vectorizer so a question can be compared directly against every stored passage. Hover a step below to trace it above.</p>
+
+    <div class="pipeline-list">
+      <div class="pipeline-item" data-node="ingest">
+        <div class="pipeline-op"><span class="fig">fig. 1</span>Ingest</div>
+        <p class="pipeline-desc">Accepts a source file, strips it down to plain text, and normalizes encoding before anything is split.</p>
+      </div>
+      <div class="pipeline-item" data-node="chunk">
+        <div class="pipeline-op"><span class="fig">fig. 2</span>Chunk</div>
+        <p class="pipeline-desc">Splits normalized text into overlapping passages on paragraph and sentence boundaries where possible, so a passage rarely opens or closes mid-thought.</p>
+      </div>
+      <div class="pipeline-item" data-node="embed">
+        <div class="pipeline-op"><span class="fig">fig. 3</span>Vectorize</div>
+        <p class="pipeline-desc">One TF-IDF vectorizer, fit across every stored passage, turns both passages and incoming queries into vectors in the same space.</p>
+      </div>
+      <div class="pipeline-item" data-node="retrieve">
+        <div class="pipeline-op"><span class="fig">fig. 4</span>Retrieve</div>
+        <p class="pipeline-desc">A cosine-similarity search over the vector index returns the closest passages, filtered by a minimum relevance score.</p>
+      </div>
+      <div class="pipeline-item" data-node="synthesize">
+        <div class="pipeline-op"><span class="fig">fig. 5</span>Synthesize</div>
+        <p class="pipeline-desc">A language model is prompted to answer using only the retrieved passages, and to say so when the answer isn't among them, citing the passage it drew from.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="notes">
+    <div class="section-head"><span class="section-num">&sect;4</span><h2 class="section-title">Design notes</h2></div>
+    <div class="rationale-list">
+      <div class="rationale-item">
+        <span class="fig">01</span>
+        <div>
+          <h3>TF-IDF over a neural embedding model</h3>
+          <p>No GPU, no model download, no embedding API key &mdash; ingestion works the moment the service starts. The vector-store interface doesn't care how a vector was produced, so a dense embedding model is a one-file swap, not a redesign.</p>
+        </div>
+      </div>
+      <div class="rationale-item">
+        <span class="fig">02</span>
+        <div>
+          <h3>Retrieval and generation share nothing but the index</h3>
+          <p>The retriever has no knowledge of which model will read its output. Either the vectorizer or the language model can be swapped independently.</p>
+        </div>
+      </div>
+      <div class="rationale-item">
+        <span class="fig">03</span>
+        <div>
+          <h3>Answers are grounded, not paraphrased from memory</h3>
+          <p>The system prompt constrains the model to the retrieved passages and instructs it to say when an answer isn't among them, rather than fall back on what it already knows.</p>
+        </div>
+      </div>
+      <div class="rationale-item">
+        <span class="fig">04</span>
+        <div>
+          <h3>The evidence is never hidden behind the answer</h3>
+          <p>Every response includes the retrieved passages, their document, and their relevance score &mdash; whether or not a language model was available to summarize them.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="stack">
+    <div class="section-head"><span class="section-num">&sect;5</span><h2 class="section-title">Stack</h2></div>
+
+    <div class="spec-cluster">
+      <div class="spec-cluster-title">Interface</div>
+      <div class="spec-table-scroll">
+        <table class="spec-table">
+          <thead><tr><th>Layer</th><th>Choice</th><th>Role</th></tr></thead>
+          <tbody>
+            <tr><td>API</td><td>FastAPI</td><td>Async REST endpoints, request validation via Pydantic</td></tr>
+            <tr><td>Server</td><td>Uvicorn</td><td>ASGI runtime</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="spec-cluster">
+      <div class="spec-cluster-title">Retrieval</div>
+      <div class="spec-table-scroll">
+        <table class="spec-table">
+          <thead><tr><th>Layer</th><th>Choice</th><th>Role</th></tr></thead>
+          <tbody>
+            <tr><td>Chunking</td><td>LangChain text splitters</td><td>Recursive, structure-aware passage splitting</td></tr>
+            <tr><td>Vector index</td><td>scikit-learn TF-IDF</td><td>Passage vectorization and cosine similarity search</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="spec-cluster">
+      <div class="spec-cluster-title">Generation</div>
+      <div class="spec-table-scroll">
+        <table class="spec-table">
+          <thead><tr><th>Layer</th><th>Choice</th><th>Role</th></tr></thead>
+          <tbody>
+            <tr><td>Language model</td><td>Groq (via LangChain)</td><td>Context-grounded response synthesis</td></tr>
+            <tr><td>Prompting</td><td>Structured system prompt</td><td>Constrains answers to retrieved context, requires citation</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Preksha Barjatya &middot; AI Research Assistant</span>
+    <a class="back-top" href="#top">Back to top</a>
+  </footer>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
