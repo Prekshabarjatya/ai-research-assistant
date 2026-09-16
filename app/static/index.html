@@ -18,6 +18,7 @@
     <nav class="navlinks">
       <a href="#documents">Documents</a>
       <a href="#ask">Ask</a>
+      <a href="#research">Research</a>
       <a href="#architecture">Architecture</a>
       <a href="#notes">Design notes</a>
       <a href="#stack">Stack</a>
@@ -40,9 +41,11 @@
     <div class="tagrow">
       <span class="tag">FastAPI</span>
       <span class="tag">LangChain</span>
+      <span class="tag">LangGraph</span>
       <span class="tag">RAG</span>
       <span class="tag">Vector search</span>
       <span class="tag">Groq</span>
+      <span class="tag">Tavily</span>
     </div>
   </section>
 
@@ -57,6 +60,11 @@
           <input id="ingest-file" name="file" type="file" accept=".md,.markdown,.txt,.pdf" required>
           <p class="field-hint">Markdown, plain text, or PDF &middot; up to 10&nbsp;MB.</p>
         </div>
+        <div class="field">
+          <label for="ingest-file-tags">Tags <span class="field-optional">(optional)</span></label>
+          <input id="ingest-file-tags" name="tags" type="text" placeholder="e.g. planning, internal">
+          <p class="field-hint">Comma-separated. Used to filter the list below and to scope what a document belongs to.</p>
+        </div>
         <button type="submit" class="btn-secondary">Upload and index</button>
         <p class="field-note" id="ingest-file-note" aria-live="polite"></p>
       </form>
@@ -70,6 +78,10 @@
           <label for="ingest-text">Text</label>
           <textarea id="ingest-text" name="text" rows="5" placeholder="Paste the document body here." required></textarea>
         </div>
+        <div class="field">
+          <label for="ingest-text-tags">Tags <span class="field-optional">(optional)</span></label>
+          <input id="ingest-text-tags" name="tags" type="text" placeholder="e.g. planning, internal">
+        </div>
         <button type="submit" class="btn-secondary">Add document</button>
         <p class="field-note" id="ingest-text-note" aria-live="polite"></p>
       </form>
@@ -79,6 +91,7 @@
       <span class="spec-cluster-title" style="margin:0;">Currently indexed</span>
       <span class="mono doc-total" id="doc-total"></span>
     </div>
+    <div class="tag-filter-row" id="tag-filter-row"></div>
     <ul class="doc-list" id="doc-list"></ul>
   </section>
 
@@ -100,8 +113,30 @@
     <div id="answer-area" class="answer-area" aria-live="polite"></div>
   </section>
 
+  <section id="research">
+    <div class="section-head"><span class="section-num">&sect;3</span><h2 class="section-title">Research</h2></div>
+    <p class="prose lede">A heavier pipeline than Ask above: three separate model calls, gathering local passages and (optionally) live web results, drafting a cited report, then reviewing that draft against its own sources before it's returned.</p>
+
+    <form id="research-form" class="ask-form">
+      <div class="field">
+        <label for="research-question">Question</label>
+        <textarea id="research-question" name="question" rows="2" maxlength="2000" placeholder="e.g. What is retrieval-augmented generation and why does grounding help?" required></textarea>
+        <p class="field-error" id="research-question-error" hidden></p>
+      </div>
+      <div class="research-toggle">
+        <input type="checkbox" id="research-use-web" checked>
+        <label for="research-use-web">Include live web search (Tavily)</label>
+      </div>
+      <div class="ask-actions">
+        <button type="submit" class="btn-primary" id="research-submit">Research</button>
+      </div>
+    </form>
+
+    <div id="research-area" class="answer-area" aria-live="polite"></div>
+  </section>
+
   <section id="architecture">
-    <div class="section-head"><span class="section-num">&sect;3</span><h2 class="section-title">Architecture</h2></div>
+    <div class="section-head"><span class="section-num">&sect;4</span><h2 class="section-title">Architecture</h2></div>
     <div class="diagram-scroll">
       <svg viewBox="0 0 1260 400" role="img" aria-label="Diagram of the retrieval-augmented generation pipeline, from source documents and a user query through chunking, TF-IDF vectorizing, retrieval, and synthesis to a grounded response.">
         <defs>
@@ -194,7 +229,7 @@
   </section>
 
   <section id="notes">
-    <div class="section-head"><span class="section-num">&sect;4</span><h2 class="section-title">Design notes</h2></div>
+    <div class="section-head"><span class="section-num">&sect;5</span><h2 class="section-title">Design notes</h2></div>
     <div class="rationale-list">
       <div class="rationale-item">
         <span class="fig">01</span>
@@ -224,11 +259,18 @@
           <p>Every response includes the retrieved passages, their document, and their relevance score, whether or not a language model was available to summarize them.</p>
         </div>
       </div>
+      <div class="rationale-item">
+        <span class="fig">05</span>
+        <div>
+          <h3>Review is a separate model call, not the writer checking its own work</h3>
+          <p>The research pipeline's reviewer is a second, independent call over the same sources, specifically prompted to look for uncited or miscited claims. A model rarely catches its own citation errors mid-generation; asking again, from a critic's framing, does.</p>
+        </div>
+      </div>
     </div>
   </section>
 
   <section id="stack">
-    <div class="section-head"><span class="section-num">&sect;5</span><h2 class="section-title">Stack</h2></div>
+    <div class="section-head"><span class="section-num">&sect;6</span><h2 class="section-title">Stack</h2></div>
 
     <div class="spec-cluster">
       <div class="spec-cluster-title">Interface</div>
@@ -264,6 +306,19 @@
           <tbody>
             <tr><td>Language model</td><td>Groq (via LangChain)</td><td>Context-grounded response synthesis</td></tr>
             <tr><td>Prompting</td><td>Structured system prompt</td><td>Constrains answers to retrieved context, requires citation</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="spec-cluster">
+      <div class="spec-cluster-title">Research agent</div>
+      <div class="spec-table-scroll">
+        <table class="spec-table">
+          <thead><tr><th>Layer</th><th>Choice</th><th>Role</th></tr></thead>
+          <tbody>
+            <tr><td>Orchestration</td><td>LangGraph</td><td>Gather &rarr; write &rarr; review state graph, with a bounded revision loop</td></tr>
+            <tr><td>Web search</td><td>Tavily</td><td>Live results gathered alongside local retrieval, cited the same way</td></tr>
           </tbody>
         </table>
       </div>

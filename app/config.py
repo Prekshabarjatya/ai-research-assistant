@@ -7,6 +7,14 @@ class Settings(BaseSettings):
     groq_api_key: str = ""
     groq_model: str = "openai/gpt-oss-120b"
 
+    # Enables the /api/research web-search step (see app/agents/graph.py).
+    # Local retrieval and /api/query work with this empty.
+    tavily_api_key: str = ""
+    web_search_max_results: int = 4
+
+    # Cap on the gather->write->review revision loop in the research graph.
+    max_research_revisions: int = 1
+
     # Optional shared-password gate for public deployments (see app/main.py).
     # Empty (the local-dev default) means no auth is enforced.
     app_password: str = ""

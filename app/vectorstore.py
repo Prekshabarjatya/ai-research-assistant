@@ -47,11 +47,12 @@ class SearchHit:
 @dataclass
 class VectorStore:
     passages: list[Passage] = field(default_factory=list)
+    document_tags: dict[str, list[str]] = field(default_factory=dict)
     _vectorizer: TfidfVectorizer | None = field(default=None, repr=False)
     _matrix: np.ndarray | None = field(default=None, repr=False)
     _lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
-    def add_document(self, document: str, text: str) -> int:
+    def add_document(self, document: str, text: str, tags: list[str] | None = None) -> int:
         """Chunks `text` and adds it under `document`. Returns chunks added."""
         chunks = chunk_text(text)
         if not chunks:
@@ -62,6 +63,9 @@ class VectorStore:
                 Passage(document=document, chunk_index=start + i, text=chunk)
                 for i, chunk in enumerate(chunks)
             )
+            # Re-ingesting a document under the same name replaces its tags
+            # rather than merging — the new ingest is the source of truth.
+            self.document_tags[document] = sorted({t.strip() for t in (tags or []) if t.strip()})
             self._refit()
         return len(chunks)
 
@@ -112,11 +116,21 @@ class VectorStore:
             seen[p.document] = seen.get(p.document, 0) + 1
         return list(seen.keys())
 
-    def document_summary(self) -> list[tuple[str, int]]:
+    def document_summary(self, tag: str | None = None) -> list[tuple[str, int, list[str]]]:
         counts: dict[str, int] = {}
         for p in self.passages:
             counts[p.document] = counts.get(p.document, 0) + 1
-        return list(counts.items())
+        summary = [(name, n, self.document_tags.get(name, [])) for name, n in counts.items()]
+        if tag:
+            summary = [row for row in summary if tag in row[2]]
+        return summary
+
+    @property
+    def all_tags(self) -> list[str]:
+        seen: set[str] = set()
+        for tags in self.document_tags.values():
+            seen.update(tags)
+        return sorted(seen)
 
     @property
     def chunk_count(self) -> int:

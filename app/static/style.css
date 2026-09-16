@@ -210,6 +210,7 @@ p:last-child{ margin-bottom: 0; }
 .field-note{ font-size: 12.5px; margin: 10px 0 0; min-height: 1.4em; }
 .field-note.ok{ color: var(--good); }
 .field-note.bad{ color: var(--bad); }
+.field-optional{ text-transform: none; letter-spacing: 0; color: var(--ink-faint); }
 
 .btn-primary, .btn-secondary{
   font-family:"Courier Prime"; font-size: 13px; font-weight:500;
@@ -255,7 +256,7 @@ p:last-child{ margin-bottom: 0; }
   margin-bottom: 14px;
 }
 .answer-status.grounded{ background: var(--good-wash); color: var(--good); }
-.answer-status.ungrounded{ background: var(--warn-wash); color: var(--warn); }
+.answer-status.ungrounded, .answer-status.needs-revision{ background: var(--warn-wash); color: var(--warn); }
 .answer-status.empty{ background: var(--bad-wash); color: var(--bad); }
 .answer-text{
   font-family:"Courier Prime", "Courier New", monospace; font-size: 1.25rem; line-height: 1.65;
@@ -278,7 +279,38 @@ p:last-child{ margin-bottom: 0; }
   margin-bottom: 6px;
 }
 .source-meta .score{ color: var(--accent); }
+.source-meta a{ color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
 .source-text{ color: var(--ink-muted); font-size: 14px; max-width: var(--measure); }
+
+.report-text{
+  font-family:"Courier Prime", "Courier New", monospace; font-size: 15px; line-height: 1.75;
+  white-space: pre-wrap; word-wrap: break-word;
+  max-width: var(--measure);
+  margin-bottom: 20px;
+  padding: 18px;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+}
+.report-actions{ display:flex; gap: 12px; margin-bottom: 22px; }
+
+.step-indicator{
+  font-family:"Courier Prime"; font-size: 13px; color: var(--ink-faint);
+  display:flex; gap: 10px; flex-wrap: wrap; align-items:center;
+}
+.step-indicator .step{ opacity: .45; }
+.step-indicator .step.is-active{ opacity: 1; color: var(--accent); }
+.step-indicator .step.is-done{ opacity: .75; color: var(--ink-muted); }
+.step-indicator .sep{ color: var(--line-strong); }
+
+.research-toggle{
+  display:flex; align-items:center; gap: 10px;
+  margin-bottom: 18px;
+  font-family:"Courier Prime"; font-size: 13.5px; color: var(--ink-muted);
+}
+.research-toggle input[type="checkbox"]{
+  width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer;
+}
+.research-toggle label{ cursor: pointer; }
 
 .skeleton{
   height: 14px; border-radius: 2px;
@@ -312,14 +344,31 @@ p:last-child{ margin-bottom: 0; }
   padding-top: 18px; margin-bottom: 4px;
 }
 .doc-total{ font-size: 12px; color: var(--ink-faint); }
+.tag-filter-row{
+  display:flex; flex-wrap:wrap; gap: 8px;
+  margin-top: 12px;
+}
+.tag-filter-row:empty{ display:none; }
+.tag-chip{
+  font-family:"Courier Prime"; font-size: 12px;
+  border: 1px solid var(--line-strong);
+  color: var(--ink-muted);
+  padding: 4px 9px;
+  background: none; cursor: pointer;
+}
+.tag-chip:hover{ color: var(--ink); border-color: var(--ink-faint); }
+.tag-chip.is-active{ background: var(--accent-wash); color: var(--accent); border-color: var(--accent); }
 .doc-list{ list-style:none; margin:0; padding:0; }
 .doc-list li{
-  display:flex; justify-content:space-between; gap: 16px;
+  display:flex; justify-content:space-between; align-items:baseline; gap: 16px;
   padding-block: 12px; border-top: 1px solid var(--line);
-  font-size: 14.5px;
+  font-size: 14.5px; flex-wrap: wrap;
 }
 .doc-list li:last-child{ border-bottom: 1px solid var(--line); }
+.doc-list .doc-name-group{ display:flex; align-items:baseline; gap: 10px; flex-wrap: wrap; }
 .doc-list .doc-name{ font-family:"Courier Prime"; font-size: 13px; }
+.doc-list .doc-tags{ display:flex; gap: 6px; flex-wrap: wrap; }
+.doc-list .doc-tag{ font-size: 11px; color: var(--ink-faint); border: 1px solid var(--line); padding: 1px 6px; }
 .doc-list .doc-chunks{ color: var(--ink-faint); font-size: 12.5px; white-space:nowrap; }
 .doc-list-empty{ color: var(--ink-faint); padding-block: 16px; border-top: 1px solid var(--line); font-size: 14px; }
 

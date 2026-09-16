@@ -10,5 +10,7 @@ services:
         sync: false
       - key: GROQ_MODEL
         value: openai/gpt-oss-120b
+      - key: TAVILY_API_KEY
+        sync: false
       - key: APP_PASSWORD
         sync: false

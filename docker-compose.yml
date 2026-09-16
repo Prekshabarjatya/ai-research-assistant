@@ -6,5 +6,6 @@ services:
     environment:
       GROQ_API_KEY: ${GROQ_API_KEY:-}
       GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
+      TAVILY_API_KEY: ${TAVILY_API_KEY:-}
       APP_PASSWORD: ${APP_PASSWORD:-}
     restart: unless-stopped
