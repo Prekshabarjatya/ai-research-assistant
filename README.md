@@ -56,7 +56,29 @@ service; a production corpus would move ingestion to a persistent store
 (pgvector, a managed vector DB, or a mounted disk running the same Chroma
 or FAISS store behind this same interface).
 
-## Running locally
+## Running with Docker
+
+```bash
+docker build -t ai-research-assistant .
+docker run -p 8000:8000 --env-file .env ai-research-assistant
+```
+
+Or with Compose, which reads `GROQ_API_KEY` / `GROQ_MODEL` / `APP_PASSWORD`
+from a `.env` file in the project root the same way:
+
+```bash
+cp .env.example .env   # add your GROQ_API_KEY to enable synthesis
+docker compose up --build
+```
+
+Either way, open `http://localhost:8000`. The image runs as a non-root
+user, exposes a `HEALTHCHECK` against `/health`, and pins its own Python
+version (3.12) independent of whatever Python the host has installed — see
+the Dockerfile's top comment for why. It's the same image any Docker-based
+host (Fly.io, Railway, a VPS, Render's Docker runtime) deploys from
+directly.
+
+## Running locally without Docker
 
 ```bash
 python3 -m venv .venv
@@ -106,18 +128,36 @@ own API.
 | `TOP_K` | `4` | Passages retrieved per query. |
 | `MIN_RELEVANCE_SCORE` | `0.05` | Minimum cosine similarity for a passage to count as relevant. |
 
-## Deploying to Render
+## Deploying
 
-`render.yaml` is a ready-to-use Blueprint:
+This ships as one Docker image (see "Running with Docker" above), so any
+host that runs a container from a Dockerfile works the same way:
+
+### Render
+
+`render.yaml` is a ready-to-use Blueprint that builds straight from the
+`Dockerfile` (`runtime: docker`) rather than Render's native Python
+buildpack:
 
 1. Push this repo to GitHub.
 2. In Render: **New → Blueprint**, point it at the repo.
 3. Set `GROQ_API_KEY` (get one at [console.groq.com](https://console.groq.com))
    and, for a public deployment, `APP_PASSWORD`.
-4. Deploy. Render builds with `pip install .` and runs
-   `uvicorn app.main:app --host 0.0.0.0 --port $PORT`, with `/health` as
-   the health check path.
+4. Deploy. Render builds the image from the Dockerfile and runs it with
+   its own `$PORT` injected — the image's `CMD` reads that at container
+   start rather than assuming a fixed port, and `/health` is the health
+   check path.
 
-The free plan has no persistent disk and spins down on idle — see
-"In-memory index, rebuilt on startup" above for what that means for
-runtime-ingested documents.
+### Fly.io, Railway, a plain VPS, or anywhere else that runs a Dockerfile
+
+`fly launch` / Railway's "Deploy from Dockerfile" / a bare
+`docker run -p 80:8000 --env-file .env $(docker build -q .)` all work
+unchanged — nothing in the image is Render-specific beyond reading `$PORT`
+when the platform sets one (it falls back to 8000 otherwise).
+
+### What's the same everywhere
+
+No platform in the free/hobby tier here ships a persistent disk by
+default, and this service doesn't need one to run — see "In-memory index,
+rebuilt on startup" above for what that means for anything ingested at
+runtime through `/api/ingest/*`.
